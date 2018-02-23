@@ -1,2 +1,2 @@
 # meetup-presentations_philadelphia
-R-Ladies Philadelphia meetup presentations
+This repo contains meetup presentations for R-Ladies Philly
