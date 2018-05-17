@@ -1,5 +1,5 @@
 # R-Ladies Philly Materials
-This repo contains meetup presentations for R-Ladies Philly
+This repo contains meetup presentations for R-Ladies Philly - they are great!!
 
 ## Upcoming events
 Please get in touch with us through our [meetup page](https://www.meetup.com/rladies-philly/)
