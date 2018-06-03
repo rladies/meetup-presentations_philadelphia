@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 \usepackage{graphicx}
 
 \definecolor{rladiespurple}{HTML}{823282}
@@ -30,4 +31,38 @@
 %% change fontsize of output
 \let\oldverbatim\verbatim
 \let\endoldverbatim\endverbatim
+=======
+\usepackage{graphicx}
+
+\definecolor{rladiespurple}{HTML}{823282}
+\definecolor{rladiesgrey}{HTML}{b4b4b4}
+
+% adapted from http://svmiller.com/miscellany/my-custom-clemson-themed-beamer-style/
+\addtobeamertemplate{navigation symbols}{}{%
+    \usebeamerfont{footline}%
+    \usebeamercolor[rladiespurple]{footline}%
+    \hspace{1em}%
+    \insertframenumber/25
+}
+\titlegraphic{\includegraphics[width=0.2\paperwidth]{images/rladies.png}}
+\setbeamertemplate{title page}[empty]
+\setbeamercolor{frametitle}{fg=rladiespurple,bg=white}
+\setbeamercolor{title}{fg=rladiespurple,bg=white}
+\setbeamercolor{subtitle}{fg=rladiespurple,bg=white}
+\setbeamercolor{local structure}{fg=rladiespurple}
+\setbeamercolor{section in toc}{fg=rladiespurple,bg=white}
+\setbeamercolor{item projected}{fg=rladiespurple,bg=white}
+\setbeamertemplate{itemize item}{\color{rladiespurple}$\bullet$}
+\setbeamertemplate{itemize subitem}{\color{rladiespurple}\scriptsize{$\bullet$}}
+
+%https://stackoverflow.com/questions/38323331/code-chunk-font-size-in-beamer-with-knitr-and-latex
+%% change fontsize of R code
+\let\oldShaded\Shaded
+\let\endoldShaded\endShaded
+\renewenvironment{Shaded}{\footnotesize\oldShaded}{\endoldShaded}
+
+%% change fontsize of output
+\let\oldverbatim\verbatim
+\let\endoldverbatim\endverbatim
+>>>>>>> 674c01053f097ea018edec1204ebdf7d43751467
 \renewenvironment{verbatim}{\footnotesize\oldverbatim}{\endoldverbatim}
