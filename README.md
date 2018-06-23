@@ -9,6 +9,7 @@ Please get in touch with us through our [meetup page](https://www.meetup.com/rla
 * March - [Workflow Optimization with RStudio Book Club](https://www.meetup.com/rladies-philly/events/248025694/)
 * April - [Introduction to Text Mining with R](https://www.meetup.com/rladies-philly/events/249207164/)
 * May - [Git HappieR with GitHub](https://www.meetup.com/rladies-philly/events/250279457/)
+* June - [Data Cleaning in R, part 1](https://www.meetup.com/rladies-philly/events/251378907/)
 
 ## Further information
 
