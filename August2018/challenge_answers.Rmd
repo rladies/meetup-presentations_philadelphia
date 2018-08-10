@@ -1,0 +1,286 @@
+---
+title: "The R-Ladies Data Cleaning Gauntlet"
+subtitle: "Possible Answers"
+author: "R-Ladies Philly"
+date: "8/2/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intro
+
+Below I have assembled some data cleaning challenges! The data to clean is all available online.
+
+This first code chunk loads the data. In Rstudio, you can click a green arrow in the top right corner to run the chunk. You should see that a new variable appears in your Global Environment.
+
+```{r get_data}
+data_link <- 'http://data.phl.opendata.arcgis.com/datasets/0707c1f31e2446e881d680b0a5ee54bc_0.csv'
+df <- read.csv(data_link)
+```
+
+```{r load_packages}
+# Do you want to load some packages here? Maybe tidyverse? 
+library(tidyverse)
+library(stringr)
+library(lubridate)
+```
+
+# Challenge one
+
+The first step is to inspect the data. Use 2 or three commands to look at things like...   
+
+* What are the variable/column names?
+* What data class are the variable/columns?
+* How many NA's are there per variable?
+
+```{r inspect}
+# Here are some useful data inspection functions!
+names(df)
+str(df)
+summary(df)
+colSums(is.na(df))
+# Using dplyr
+glimpse(df)
+# Use lapply to check class or number of NA?
+lapply(df, class)
+lapply(df, function(x) sum(is.na(x)))
+```
+
+# Challenge two
+
+There is some missing data. Also some data has been converted to factors when it should be character.
+
+Let's re-import the data with read.csv() and some options.
+
+```{r reload_data}
+# Fill in the options - add stringsAsFactors, na.strings
+?read.csv
+
+df <- read.csv(data_link, stringsAsFactors = F, na.strings=c("NA","NaN", " ", ""))
+# Alternatively, use your favorite package to read in the data instead of read.csv()
+df <- read_csv(data_link, na = c("NA","NaN", " ", ""))
+```
+
+# Challenge three
+
+Let's clean up the NEIGHBORHOOD! Use all your favorite commands to look at the values in NEIGHBORHOOD and clean them up. There are some entries with an extra space. There is some inconsistent capitalization.
+
+
+```{r clean_neighborhood}
+# One way
+df <- df %>% #note this saves the changes to the dataframe
+  mutate(NEIGHBORHOOD = stringr::str_trim(NEIGHBORHOOD)) %>% # stringr package
+  mutate(NEIGHBORHOOD = stringr::str_to_title(NEIGHBORHOOD))
+
+# Another way 
+unique(df$NEIGHBORHOOD)
+length(unique(df$NEIGHBORHOOD)) #13, looks like there should be 12...
+df$NEIGHBORHOOD <- str_trim(df$NEIGHBORHOOD) # this was handled by read_csv so redundant
+df$NEIGHBORHOOD <- tolower(df$NEIGHBORHOOD)
+length(unique(df$NEIGHBORHOOD)) # 12
+unique(df$NEIGHBORHOOD)
+```
+
+# Challenge four
+
+There are 48 values in the MONTHS variable. If you want to plot the number of farmer's markets by month, how will you do it?
+
+Tip: Clean up the MONTHS variable and then add some new variables 
+
+```{r clean_months_one}
+# This is one way... 
+# Create a factor with the FULL months in order (will be useful later)
+all_months <- factor(c("January","February","March",
+                "April","May","June","July",
+                "August","September","October",
+                "November","December"), levels= c("January","February","March",
+                "April","May","June","July",
+                "August","September","October",
+                "November","December"))
+
+# This cleanup with pipes (%>%) does several operations
+df <- df %>% 
+  mutate(MONTHS = sub("Late |end of ","", MONTHS)) %>% # Manual clean
+  mutate(MONTHS = sub("Thanksgiving","November", MONTHS)) %>% #Manual change
+  separate(MONTHS, into = c("start_month","end_month"), sep = "-|–", remove = F) %>%   #separate is part of tidyr
+  mutate(start_month = stringr::str_trim(start_month),
+         end_month = stringr::str_trim(end_month)) %>% 
+  mutate(start_month = if_else(grepl("round",MONTHS), "January", start_month),
+         end_month = if_else(grepl("round",MONTHS), "December", end_month))
+
+# Next have some values in end_month start_month with Month and Date - just remove numeric dates
+# also make all upper case
+df <- df %>% 
+  separate(end_month, into = "end_month", sep = " ") %>% 
+  separate(start_month, into = "start_month", sep = " ") %>% 
+  mutate_at(vars(ends_with("month")), str_to_title) # capitalize them
+
+# Still have problem that some months are abbreviations and some are full text (end_month)
+# Search for substrings and convert to full string?
+df$end_month <- sapply(df$end_month, 
+                       function(month) all_months[str_detect(all_months, month)])
+
+# Now how to create table where we have months Jan-Dec and then the # of markets
+# I don't have an elegant way - for each convert month to number
+df$start_month_n <- as.numeric(factor(df$start_month, levels = levels(all_months)))
+df$end_month_n <- as.numeric(factor(df$end_month, levels = levels(all_months)))
+
+# Create a summarization based on the numeric start and end months
+by_month <- data.frame(month = all_months,
+                       number = sapply(1:12,
+                                       function(x) sum(df$start_month_n <= x & df$end_month_n >= x)))
+
+```
+
+```{r plot_by_month}
+# Code to plot markets by month
+ggplot(by_month, aes(x = month, y = number)) +
+  geom_col()
+```
+
+
+```{r clean_months_two}
+# Here is a different way to approach challenge four
+# Uses lubridate
+unique(df$MONTHS)
+
+# split by hyphen or dash...
+df$START_DATE <- str_split_fixed(df$MONTHS, "\\p{Pd}", n = 2)[,1]
+df$END_DATE <- str_split_fixed(df$MONTHS, "\\p{Pd}", n = 2)[,2]
+
+# for "year round", start date is January and end date is December
+year_round_index <- grepl("year round", df$MONTHS, ignore.case = TRUE)
+df$START_DATE[year_round_index] = "2018-01-01" # year required for lubridate so using 2018, is there a better way?
+df$END_DATE[year_round_index] = "2018-12-01"
+
+# grep for months within text before first hyphen/dash
+# if I had more time could make this a loop through abbreviated months of the year?
+unique(df$START_DATE)
+april_index <- grepl("April", df$START_DATE, ignore.case = TRUE)
+df$START_DATE[april_index] = "2018-04-01"
+may_index <- grepl("May", df$START_DATE, ignore.case = TRUE)
+df$START_DATE[may_index] = "2018-05-01"
+june_index <- grepl("June", df$START_DATE, ignore.case = TRUE)
+df$START_DATE[june_index] = "2018-06-01"
+july_index <- grepl("July", df$START_DATE, ignore.case = TRUE)
+df$START_DATE[july_index] = "2018-07-01"
+
+# grep for months within text after first hyphen/dash...
+unique(df$START_DATE)
+aug_index <- grepl("Aug", df$END_DATE, ignore.case = TRUE)
+df$END_DATE[aug_index] = "2018-08-01"
+sept_index <- grepl("Sept", df$END_DATE, ignore.case = TRUE)
+df$END_DATE[sept_index] = "2018-09-01"
+oct_index <- grepl("Oct", df$END_DATE, ignore.case = TRUE)
+df$END_DATE[oct_index] = "2018-10-01"
+nov_index <- grepl("Nov|Thanksgiving", df$END_DATE, ignore.case = TRUE)
+df$END_DATE[nov_index] = "2018-11-01"
+
+# for this one, go with largest duration
+largest_dur_index <- grepl("June 20 - August 29, May 12 - October 27", df$END_DATE, ignore.case = TRUE)
+df$START_DATE[largest_dur_index] = "2018-05-01"
+df$END_DATE[largest_dur_index] = "2018-10-01"
+
+# check start and end dates
+unique(df$START_DATE)
+unique(df$END_DATE)
+
+# use lubridate to create variable for date interval the market is open
+df$INT_OPEN <- interval(df$START_DATE, df$END_DATE)
+# I was trying to find a way of plotting the interval directly, but didn't find anything
+
+# build data frame with row for each month, first col = month number, second col = num markets open, third col = iso date for first of month (2018)
+# sum() is counting the number of rows for which the specified date is within the date interval
+markets_open_count <- as.data.frame(rbind(
+  "01" = c(01, sum(ymd("2018-01-01") %within% df$INT_OPEN == TRUE), "2018-01-01"),
+  "02" =  c(02, sum(ymd("2018-02-01") %within% df$INT_OPEN == TRUE),"2018-02-01"),
+  "03" =  c(03, sum(ymd("2018-03-01") %within% df$INT_OPEN == TRUE), "2018-03-01"),
+  "04" =  c(04, sum(ymd("2018-04-01") %within% df$INT_OPEN == TRUE), "2018-04-01"),
+  "05" =  c(05, sum(ymd("2018-05-01") %within% df$INT_OPEN == TRUE), "2018-05-01"),
+  "06" =  c(06, sum(ymd("2018-06-01") %within% df$INT_OPEN == TRUE), "2018-06-01"),
+  "07" =  c(07, sum(ymd("2018-07-01") %within% df$INT_OPEN == TRUE), "2018-07-01"),
+  "08" =  c(08, sum(ymd("2018-08-01") %within% df$INT_OPEN == TRUE), "2018-08-01"),
+  "09" =  c(09, sum(ymd("2018-09-01") %within% df$INT_OPEN == TRUE), "2018-09-01"),
+  "10" =  c(10, sum(ymd("2018-10-01") %within% df$INT_OPEN == TRUE), "2018-10-01"),
+  "11" =  c(11, sum(ymd("2018-11-01") %within% df$INT_OPEN == TRUE), "2018-11-01"),
+  "12" =  c(12, sum(ymd("2018-12-01") %within% df$INT_OPEN == TRUE), "2018-12-01")))
+colnames(markets_open_count) <- c("month", "count", "date")
+markets_open_count$month <- as.factor(markets_open_count$month)
+markets_open_count$count <- as.numeric(as.character(markets_open_count$count))
+markets_open_count
+```
+
+
+```{r plot_by_month_two}
+# Code to plot markets by month - 
+# Uncomment and Modify the below ggplot2 code or start fresh with your own code
+ggplot(markets_open_count, aes(x = month(date, label = TRUE), y = count)) +
+  geom_col() +
+  scale_x_discrete(limits = month.abb)
+
+# some other plots
+# plot by start date
+ggplot(df, aes(x = month(START_DATE, label = TRUE), fill = NEIGHBORHOOD)) +
+  geom_histogram(stat = "count", binwidth = 1) +
+  scale_x_discrete(limits = month.abb)
+
+# plot by end date
+ggplot(df, aes(x = month(END_DATE, label = TRUE), fill = NEIGHBORHOOD)) +
+  geom_histogram(stat = "count", binwidth = 1) +
+  scale_x_discrete(limits = month.abb)
+
+# plot by number of months open
+ggplot(df, aes(x = month(END_DATE)-month(START_DATE), fill = NEIGHBORHOOD)) +
+  geom_histogram(stat = "count", binwidth = 1)
+
+```
+
+# Extra challenges
+
+Let's combine this data with another dataset? maybe something from opendataphilly?
+What if you were asked to plot the markets by zip code? or by day of week?
+What if you wanted to plot the markets on a map using the coordinates provided in X, Y?
+
+# Bonus data reshape challenge
+
+The farmers market data is not a great example to show converting between wide and long data. If you want to practice this, here is an interesting dataset.
+
+* Zillow makes home prices and other data available on their website: https://www.zillow.com/research/data/
+
+
+```{r load_widedata}
+zillow_source <- "http://files.zillowstatic.com/research/public/Zip/Zip_MedianListingPrice_AllHomes.csv"
+zillow_wide <- read.csv(zillow_source)
+dim(zillow_wide)
+```
+
+The data is 10165 rows and 108 columns. Let's filter to just keep Philadelphia data:
+
+```{r filter_zillow}
+# Add code to select only rows where City == "Philadelphia"
+zillow_wide <- filter(zillow_wide, City == "Philadelphia")
+```
+
+This data is wide - there are columns for every month with home prices. Instead, we want to have one column with the prices and another with the month and year. How can we convert from wide to long?
+
+```{r reshape_zillow}
+# Create a new dataframe, zillow_long, that contains reshaped data
+zillow_long <- gather(zillow_wide, key = "year.month", value = "price", X2010.01:X2018.06) %>% 
+  separate(year.month, into = c("year","month"), sep = "\\.") %>% 
+  mutate(year = as.numeric(sub("X","",year)),
+         month = as.numeric(month))
+
+```
+
+```{r plot_zillow}
+# Now we can plot the prices over time for each Philadelphia RegionName (zip code)
+ggplot(zillow_long, aes(x = month, y = price, group = RegionName)) + 
+  geom_line() + 
+  facet_wrap(~year)
+
+# There are additional plots you could make that would be more interesting!
+```
+
