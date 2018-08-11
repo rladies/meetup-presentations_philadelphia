@@ -1,5 +1,5 @@
 # R-Ladies Philly Materials
-Here you can find meetup presentations for R-Ladies Philly.
+Here you can find meetup presentations and other materials for R-Ladies Philly.
 
 ## Upcoming events
 Please get in touch with us through our [meetup page](https://www.meetup.com/rladies-philly/)
@@ -10,6 +10,8 @@ Please get in touch with us through our [meetup page](https://www.meetup.com/rla
 * April - [Introduction to Text Mining with R](https://www.meetup.com/rladies-philly/events/249207164/)
 * May - [Git HappieR with GitHub](https://www.meetup.com/rladies-philly/events/250279457/)
 * June - [Data Cleaning in R, part 1](https://www.meetup.com/rladies-philly/events/251378907/)
+* July - Coffee and Code project night (no materials - just working on our projects together)
+* August - [Data Cleaning in R, part 2](https://www.meetup.com/rladies-philly/events/252955017/)
 
 ## Further information
 
