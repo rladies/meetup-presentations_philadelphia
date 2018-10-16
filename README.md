@@ -12,6 +12,10 @@ Please get in touch with us through our [meetup page](https://www.meetup.com/rla
 * June - [Data Cleaning in R, part 1](https://www.meetup.com/rladies-philly/events/251378907/)
 * July - Coffee and Code project night (no materials - just working on our projects together)
 * August - [Data Cleaning in R, part 2](https://www.meetup.com/rladies-philly/events/252955017/)
+* September - [Learn to make a website with R and blogdown!](https://www.meetup.com/rladies-philly/events/253845972/)
+* October - [Dashboards and Apps with Shiny](https://www.meetup.com/rladies-philly/events/254920445/)
+* November - Workshop on Spatial Data Basics
+
 
 ## Further information
 
