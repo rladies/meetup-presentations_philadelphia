@@ -6,6 +6,9 @@ Please get in touch with us through our [meetup page](https://www.meetup.com/rla
 
 ## 2019
 * January - [2019 New Year Meetup and R-Ladies Birthday Party](https://www.meetup.com/rladies-philly/events/256754198/)
+* February - Kick-off for the Community Data Project [GitHub Here](https://github.com/rladiesPHL/2019_datathon)
+* March - Finale of the [Community Data Project](http://rladiesphilly.org/post/feb-march-recap/)
+* April - [Open Science & Bioinformatics](https://www.meetup.com/rladies-philly/events/259821220/)
 
 ## 2018
 * December - [Introduction to Machine Learning](https://www.meetup.com/rladies-philly/events/256607630/)
