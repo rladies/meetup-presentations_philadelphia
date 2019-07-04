@@ -5,6 +5,8 @@ Here you can find meetup presentations and other materials for R-Ladies Philly.
 Please get in touch with us through our [meetup page](https://www.meetup.com/rladies-philly/)
 
 ## 2019
+* July - Data Science Lightning Talks
+* June - Workshop on Data Visualization
 * May - [Diversity and Inclusion and Data](https://www.meetup.com/rladies-philly/events/261088594/)
 * April - [Open Science & Bioinformatics](https://www.meetup.com/rladies-philly/events/259821220/)
 * March - Finale of the [Community Data Project](http://rladiesphilly.org/post/feb-march-recap/)
