@@ -5,6 +5,9 @@ Here you can find meetup presentations and other materials for R-Ladies Philly.
 Please get in touch with us through our [meetup page](https://www.meetup.com/rladies-philly/)
 
 ## 2019
+* November - [Data Analytics in Public Health](https://www.meetup.com/rladies-philly/events/265559935/)
+* October - [Network Analysis](https://www.meetup.com/rladies-philly/events/264114247/)
+* September - [Reporting Research with R Markdown](https://www.meetup.com/rladies-philly/events/264114213/)
 * August - Coffee and Code project night (no materials - just working on our projects together)
 * July - [Data Science Lightning Talks](https://www.meetup.com/rladies-philly/events/262431583/)
 * June - [Workshop on Data Visualization](https://www.meetup.com/rladies-philly/events/261558888/)
