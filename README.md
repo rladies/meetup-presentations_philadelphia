@@ -2,9 +2,13 @@
 Here you can find meetup presentations and other materials for R-Ladies Philly.
 
 ## Upcoming events
-Please get in touch with us through our [meetup page](https://www.meetup.com/rladies-philly/)
+Please check out our [meetup page](https://www.meetup.com/rladies-philly/)
+
+## 2020
+* January - [R-esolutions 2020!](https://www.meetup.com/rladies-philly/events/266230696/)
 
 ## 2019
+* December - [Machine Learning Workshop](https://www.meetup.com/rladies-philly/events/266229730/)
 * November - [Data Analytics in Public Health](https://www.meetup.com/rladies-philly/events/265559935/)
 * October - [Network Analysis](https://www.meetup.com/rladies-philly/events/264114247/)
 * September - [Reporting Research with R Markdown](https://www.meetup.com/rladies-philly/events/264114213/)
@@ -33,8 +37,12 @@ Please get in touch with us through our [meetup page](https://www.meetup.com/rla
 
 ## Further information
 
-Checkout our [Meetup page](https://www.meetup.com/rladies-philly/).
+Visit our [website](https://rladiesphilly.org/)
 
-Follow us on [Twitter](https://twitter.com/RLadiesPhilly).
+Or our [Meetup page](https://www.meetup.com/rladies-philly/)
+
+Follow us on [Twitter](https://twitter.com/RLadiesPhilly)
+
+The organizing team can be reached at philly@rladies.org
 
 We follow the [Code of Conduct](https://github.com/rladies/starter-kit/wiki/Code-of-Conduct) and encourage participants to read [Rules & Guidelines of R-Ladies](https://github.com/rladies/starter-kit/blob/master/R-Ladies_RulesGuidelines.pdf).
