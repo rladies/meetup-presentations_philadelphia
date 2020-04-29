@@ -5,6 +5,10 @@ Here you can find meetup presentations and other materials for R-Ladies Philly.
 Please check out our [meetup page](https://www.meetup.com/rladies-philly/)
 
 ## 2020
+* May - [A/B Testing in R - Virtual Event](https://www.meetup.com/rladies-philly/events/268783099/)
+* April - [Introduction to the Tidyverse](https://www.meetup.com/rladies-philly/events/268620327/)
+* March - [2020 Data Hack Conclusion](https://www.meetup.com/rladies-philly/events/267325018/)
+* February - [2020 Data Hack: Hackathon Kickoff](https://www.meetup.com/rladies-philly/events/268305037/)
 * January - [R-esolutions 2020!](https://www.meetup.com/rladies-philly/events/266230696/)
 
 ## 2019
