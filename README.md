@@ -5,6 +5,9 @@ Here you can find meetup presentations and other materials for R-Ladies Philly.
 Please check out our [meetup page](https://www.meetup.com/rladies-philly/)
 
 ## 2020
+* Semptember - [Decision Trees & Random Forests](https://www.meetup.com/rladies-philly/events/268783162/)
+* August - [Hands-on Machine Learning Workshop](https://www.meetup.com/rladies-philly/events/268783114/)
+* July - [How to Test and Roll](https://www.meetup.com/rladies-philly/events/268783188/)
 * June - [Intro to R Workshop](https://www.meetup.com/rladies-philly/events/268783148/)
 * May - [A/B Testing in R - Virtual Event](https://www.meetup.com/rladies-philly/events/268783099/)
 * April - [Introduction to the Tidyverse](https://www.meetup.com/rladies-philly/events/268620327/)
