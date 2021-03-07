@@ -4,7 +4,15 @@ Here you can find meetup presentations and other materials for R-Ladies Philly.
 ## Upcoming events
 Please check out our [meetup page](https://www.meetup.com/rladies-philly/)
 
+## 2021
+* March - [2021 Datathon Kickoff: Exploring Judicial Patterns](https://www.meetup.com/rladies-philly/events/276365040/)
+* February - [From Learn-R to Teach-R](https://www.rladiesphilly.org/post/recap_teachr/)
+* January - [Introduction to R dashboard development with Shiny Dashboard](https://www.meetup.com/rladies-philly/events/268783210/)
+
 ## 2020
+* December - [Data Visualization Workshop](https://www.rladiesphilly.org/post/recap_data_viz/)
+* November - [Your First R Package in 1 Hour](https://www.rladiesphilly.org/post/nov2020-recap/)
+* October - [Flexdashboard debugging with shinyobjects](https://www.rladiesphilly.org/post/oct2020-recap/)
 * September - [Decision Trees & Random Forests](https://www.meetup.com/rladies-philly/events/268783162/)
 * August - [Hands-on Machine Learning Workshop](https://www.meetup.com/rladies-philly/events/268783114/)
 * July - [How to Test and Roll](https://www.meetup.com/rladies-philly/events/268783188/)
