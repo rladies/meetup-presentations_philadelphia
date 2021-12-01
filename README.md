@@ -5,6 +5,9 @@ Here you can find meetup presentations and other materials for R-Ladies Philly.
 Please check out our [meetup page](https://www.meetup.com/rladies-philly/)
 
 ## 2021
+* November - [Getting Started with Unit Testing in R](https://youtu.be/4bPekjzIYiU)
+* October - [Bayes Rules! An Introduction to Bayesian Modeling with R with Alicia Johnson](https://youtu.be/MgB1ihuEDN4)
+* September - [Causal Inference in R](https://youtu.be/m7RH1O4r80c)
 * July - [July Workshop: Mapping COVID-19 Vaccination Across the US](https://www.meetup.com/rladies-philly/events/277326038/)
 * June - [R-Ladies Lightning Talks: How You Use R](https://www.meetup.com/rladies-philly/events/276190525/)
 * May/June - [Panel Discussion: What Are Hiring Managers Looking For in Candidates?](https://www.meetup.com/rladies-philly/events/278174135/)
