@@ -1,0 +1,681 @@
+
+# Introduction to Machine Learning Workshop
+Ran Liu, R Ladies & Women in Kaggle Philadelphia, December 13, 2018
+
+In this notebook, we will go through a kaggle competition ["House Prices: Advanced Regression Techniques"](https://www.kaggle.com/c/house-prices-advanced-regression-techniques) together. For details of the dataset, please check [here](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data). 
+
+This tutorial assumes that you have some basic knowlege of statistical models and R. By the end of this notebook, you should be able to submit your prediction to the house price competition.
+
+Please fork this notebook so that you can run and edit the codes.
+
+This notebook has benefited greatly from two kernels of [Erik Bruin](https://www.kaggle.com/erikbruin/house-prices-lasso-xgboost-and-a-detailed-eda) and [Tanner Carbonati](https://www.kaggle.com/tannercarbonati/detailed-data-analysis-ensemble-modeling). Please check them out if you want to learn more about machine learning techniques in R! 
+
+## What we will do today:
+
+1. Data Loading
+2. A Very Simple Exploratory Data Analysis (EDA)
+3. Data Preprocessing
+4. Simple Feature Engineering
+5. Modeling & Evaluation
+6. Creating Submission File
+
+## 1. Data Loading
+
+The first step of any Kaggle competition is to start a kernel and load data.
+
+The kaggle competition files are usually stored in the cloud and are accesible through an address like "../input/train.csv" and "../input/test.csv". You can confirm the file names by listing all files in the input folder.
+
+For a simple competition like this one, there will be at least two files, one for training your models (train.csv), and one for testing your predictions and caculating the LeaderBoard score (test.csv).
+
+
+
+```{r}
+## Importing packages
+require(tidyverse) # metapackage with lots of helpful functions
+require(glmnet) # ridge, lasso & elastinet
+require(xgboost) # gbm
+require(Metrics) # rmse
+require(caret) # one hot encoding
+require(corrplot) # correlation plot
+require(plyr) # for revalue
+require(GGally) # for pair plot
+require(moments) # for skewness
+
+## list files in the environment
+list.files(path = "../input")
+
+## Import data
+train <- read.csv('../input/train.csv', stringsAsFactors = F)
+test <- read.csv('../input/test.csv', stringsAsFactors = F)
+```
+
+## 2. A Very Simple Exploratory Data Analysis (EDA)
+
+**Exploratory data analysis (EDA)** is an important step for us to know our data. It's true that machine learning, unlike conventional statistic models, cares more about prediction rather than explanation. Sometimes we can even train a machine learning model without actually knowing what each variable means (a blinded dataset). However, it's always better (and more interesting) if we know what we are putting into the box. Remember: garbage in , garbage out! 
+
+### 2.1 Basic data structure
+
+Let's use some simple R functions to take a glimpse of the datasets first!
+
+
+```{r}
+## show dimensions of the train and test dataset
+dim(train) # 81 variables
+
+## show first few lines of the train dataset 
+head(train)
+
+# use glimpse() or str() to show data structure
+str(train)
+
+# check variable names
+names(train)
+```
+
+
+```{r}
+## Exercise: check data structure of the test dataset. Have you noticed any difference from the training dataset?
+
+```
+
+
+```{r}
+# Let's combine test and training dataset before further processing data
+# The ID varibale is useless in predicting the target variable, so we'll remove it
+# We also remove the target variable "SalePrice" for now
+
+all<- rbind(within(train, rm("SalePrice")), test)
+
+# Exercise: Check the dimension of the combined dataset
+```
+
+### 2.2 The target variable
+
+Our target variable, SalePrice, is a continous numerical variable. As we know, it is very likely to be skewed. Let's look at its summary statistics and distribution. 
+
+
+```{r}
+# Summary statistics
+summary(train$SalePrice)
+
+# Histogram
+ggplot(data=train, aes(x=SalePrice/1000)) +
+        geom_histogram(binwidth = 20 ) 
+```
+
+### 2.3 Correlation matrix
+
+As we have seen, we have both numerical and categorical predictors. 
+
+Let's first take a rough look at the correlation matrix within numerical variables
+
+
+
+```{r}
+# Create a list of numerical variables
+num_vars <- train %>% select_if(is.numeric) %>% names() 
+
+# how many numerical variables?
+length(num_vars)
+```
+
+
+```{r}
+# Create a correlation matrix
+df_num <- train[, num_vars]
+cor_num <- cor(df_num, use="pairwise.complete.obs") #correlations of all numeric variables
+
+#sort on decreasing correlations with SalePrice
+cor_sorted <- as.matrix(sort(cor_num[,'SalePrice'], decreasing = TRUE))
+
+#select only high corelations: cor>0.5 or cor<-0.5
+cor_high <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
+cor_num <- cor_num[cor_high, cor_high]
+
+#create the plot
+corrplot.mixed(cor_num, tl.col="black", tl.pos = "lt")
+```
+
+
+```{r}
+## Another helpful confunction is ggpairs from the package GGally
+## It helps to visualize the distribution of each variable and the correlation pairs
+ggpairs(df_num, cor_high[c(1:5)])
+```
+
+### 2.3 Bivariate analysis with categorical variables
+
+For categorical variables, the most simple way to explore their relations with the target variable is to calculate group mean/median. We'll use Neighborhood as an example. 
+
+
+```{r}
+# Draw a plot showing the median saleprice in each neighborhood
+ggplot(train, aes(x=reorder(Neighborhood, SalePrice, FUN=median), y=SalePrice)) +
+        geom_bar(stat='summary', fun.y = "median") + 
+        labs(x='Neighborhood', y='Median SalePrice') +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        scale_y_continuous(breaks= seq(0, 800000, by=50000)) +
+        geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3) 
+```
+
+There are a lot more we can do in the EDA stage. Check the other [kernels](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/kernels) in this competition and you'll find some very fancy visualizations! 
+
+## 3. Data Preprocessing
+
+Before building machine learning models, we need to get our data ready. You can call this data cleaning/preprocessing/wrangling. It may include dealing with missing values, categorical variables, outliers, and skewed distributions. 
+
+Many machine learning models do not deal with missing values and categorical variables automatically, so we need to transform them before getting into the models. We'll first look at missing values.
+
+### 3.1 Handling missing data
+
+
+```{r}
+## Check missing data for each variable
+colSums(is.na(all)) %>% sort(decreasing=TRUE)
+
+## How many variables contain missing values?
+which(colSums(is.na(all))>0) %>% length()
+
+## get a list of variables with missing values
+missing_vars <- which(colSums(is.na(all))>0) %>% names()
+
+## Check what type of variables they are
+all %>% select(missing_vars) %>% str()
+```
+
+
+```{r}
+## The next chunk of codes helps to visualize the missing structure. Don't worry about it if you find it a little bit difficult to understand. 
+# Create a data frame with information on whether the value in each cell is missing
+missing_by_column <- all %>% 
+    select(missing_vars) %>% # keep only variables with missing values
+    is.na() %>% # check if each cell is na
+    as_data_frame() %>% # convert to data-frame
+    mutate(row_number = 1:nrow(.)) %>% # add a column with the row number
+    gather(variable, is_missing, -row_number) # turn wide data into narrow data
+
+# Plot missing values to see the missing structure
+ggplot(missing_by_column, aes(y = variable, x = row_number, fill = is_missing)) +
+    geom_tile() + 
+    scale_fill_grey(name = "",labels = c("Present","Missing")) +
+    labs(y = "Variables in Dataset",
+         x = "Rows / observations")
+
+# What can you tell from the graph?
+```
+
+One simple way to deal with missing values is to drop them. However, that is usually not desirable. If we drop rows, we'll lose cases; if we drop columns, we'll lose features. Most importantly, this may introduce bias into our analysis since data might be missing for a reason.
+
+Let's look at some of those features with missing data closely and figure out the best way
+
+**PoolQC**: Pool quality. If this is missing, it means the house doesn't have a pool. Let's impute "None". 
+
+**MiscFeature**: Miscellaneous feature not covered in other categories. Missing values probably mean that there are no special features. Since this is a categorical variable, let's treat these houses with missing values as another category and impute "None".
+
+**Alley**: Type of alley access. Probably no alley access if missing. Impute "None".
+
+**Fence**: Fence quality. Probably no fence if missing. Impute "None".
+
+**FireplaceQu**: Fireplace quality. Probably no fireplace ifmissing. Impute "None".
+
+**LotFrontage**: Linear feet of street connected to property. This shouldn't be zero since every house should be connected to the street. We'll take a simple path and impute the mean.
+
+**Garage variables**: Note garage variables tend to have missing values in the same cases. A reasonable guess is that these houses do not have a garage. 
+
+**Basement variables**: Same as the garage variables. 
+
+**MasVnrType / MasVnrArea**: Masonry veneer type and area. Both have 8 cases missing, most likely the same cases. If we decide to set these 8 cases as no masonry venner, we should impute "None" for MasVnrType and 0 for the MasVnrArea.
+
+Other variables have very few missing, we'll simply impute the most common value for now. 
+
+The next block shows some basic ways to deal with missing values. If your data have a more complex missing structure/nature, you may want to try Multivariate Imputation by Chained Equations (MICE). That is beyond the scope of this workshop, but you can find more information [here](https://www.kaggle.com/captcalculator/imputing-missing-data-with-the-mice-package-in-r) and [here](https://datascienceplus.com/imputing-missing-data-with-r-mice-package/)
+
+
+```{r}
+## Impute "None" for missing values in PoolQC, MiscFeature, Alley, Fence, FireplaceQu, and MasVnrType
+all <- all %>% mutate_at (c("PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "MasVnrType"),
+                   funs(replace_na(., "None")))
+
+## Impute 0 for MasVnrArea
+all$MasVnrArea <- replace_na(all$MasVnrArea, replace=0)
+
+## Impute the mean value for LotFrontage
+all$LotFrontage <- replace_na(all$LotFrontage, mean(all$LotFrontage, na.rm=TRUE))
+```
+
+
+```{r}
+## Impute for garage and basement variables: impute 0 for numeric variables, and "None" for categorical ones
+## First let's get a list of the numerical variables
+garage_bsmt_numerical<- all %>% 
+        select(matches("Garage|Bsmt")) %>% 
+        select_if(is.numeric) %>% 
+        select(-GarageYrBlt) %>% # We should not impute 0 for this one as it does not make sense and may create outliers
+        names() 
+
+# Impute 0 for numeric variables about garage and basement
+all <- all %>% 
+       mutate_at (vars(garage_bsmt_numerical),funs(replace_na(., 0)))
+
+# For GarageYrBlt, we can impute 'none', but that will make it a categorical variable
+# Here I impute the minimum value
+all$GarageYrBlt <- replace_na(all$GarageYrBlt, min(all$GarageYrBlt, na.rm=TRUE))
+
+# For the rest, impute "None"
+garage_bsmt_cat <- all %>%
+        select(matches("Garage|Bsmt")) %>%
+        select_if(negate(is.numeric)) %>%
+        names()
+all <- all %>% mutate_at (vars(garage_bsmt_cat),funs(replace_na(., "None"))) 
+
+str(all)
+```
+
+
+```{r}
+## The rest variables have very few missings, let's put in the mode for now 
+## Create a function to get the mode (R does not have a base function for this)
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+## Get a list of remaining variable names
+remain_missing <- which(colSums(is.na(all))>0) %>% names()
+
+## Impute the mode for the remaining missing values
+all <- all %>% mutate_at (vars(remain_missing), funs(replace_na(., getmode(.))))
+```
+
+
+```{r}
+## Exercise: Check again whether there are still missing cases
+
+## Check data dimension again
+
+```
+
+We have removed all missing values in the data! Again, here I used the most simple ways to deal with missing values. You can always go deeper and explore more complex ways, for example, imputing missing values by taking the mean/median/mode in the neighborhood, or use MICE. This may greatly improve your model performance. 
+
+### 3.2 Adjusting variable types
+
+Now we have a complete dataset. Before we move on to the models, there are still a lot we can do to preprocess our data. One thing is to check on the variable types/classes to make sure they align with the variable nature. This section will show you some simple examples. 
+
+First, some numerical variables are actually categorical variables. 
+
+
+```{r}
+## Let's look at the data structure again
+str(all)
+```
+
+
+```{r}
+## Several things to notice: 
+## MoSold and YrSold are listed as numerical variables, but that doesn't make much sense. 
+## Let's check how MoSold is correlated with SalePrice in the training dataset
+ggplot(train, aes(x=as.factor(MoSold), y=SalePrice)) +
+        geom_bar(stat='summary', fun.y = "median") +
+        geom_label(stat = "count", aes(label = ..count.., y = ..count..)) 
+       
+## There is a trend, but it is not linear. We'd better treat month as independ categories. 
+## You can do the same with YrSold. 
+```
+
+
+```{r}
+## Let's convert them into factors
+all$MoSold <- as.factor(all$MoSold)
+all$YrSold <- as.factor(all$YrSold)
+```
+
+
+```{r}
+## Exercise:
+## MSSubClass is a numerical variable, but it's actually a coding system. Each number represents a category. 
+## Let's convert it into a factor
+```
+
+We've found that some numerical variables are actually categorical and we have transformed them into factors. Conversely, some categorical variables are actually ordinal and can be converted into numerical variables. For example, variables about "quality" and "condition" clearly imply an order. 
+
+
+```{r}
+## Some categorical variables are actually ordinal variables. For example, let's check GarageQual:
+table(all$GarageQual)
+
+## From the data description file we know: Ex = Excellent,  Gd=Good, TA=Typical/Average, Fa = Fair, Po=poor. 
+## There is clearly an order. If we treat it as a regular categorical (nominal) variable, we'll lose information.
+## Let's make it an integer variable.
+Qualities <- c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5) # Create a list of levels. This list can be reused for other quality variables
+all$GarageQual <- revalue(all$GarageQual, Qualities) %>% as.integer() # revalue the variable into an integer variable
+
+```
+
+
+```{r}
+## Exercise: 
+## Note that there are other quality variables 
+all %>% select(matches("Qual")) %>% names
+
+## You can check on their coding systems and decide whether they are actually ordinal variables. 
+## Similarly, some other variables are also ordinal variables. You can check the data description file to find out. 
+## I'll skip those for now. You may recode them later to get a better score in the final submission. 
+```
+
+### 3.3 One-hot encoding for categorical variables
+
+We have checked our numerical and categorical variables to make sure the type matches data nature. In fact, many machine learning models do not deal with categorical variables and we need to transform them into numerical ones before moving on to machine learning models. 
+
+There are many ways to do this, but the most popular and easiest way is to split categorical variables into several dummy dichotomous variables, and assigning 1 and 0 to them. This is called "One-Hot-Encoding" and can be easily done with the function model.matrix(). 
+
+
+```{r}
+# Check how many numerical and categorical variables we have 
+num_vars <- all %>% select_if(is.numeric) %>% names # A list of numerical variables
+cat_vars <- all %>% select_if(negate(is.numeric)) %>% names # A list of categorical variables
+cat('There are', length(num_vars), 'numeric variables, and', length(cat_vars), 'categorical variables') # print a sentence 
+```
+
+
+```{r}
+# check the dimension again
+dim(all) # 80 variables
+
+# Separate numerical and categorical variables
+df_num <- all[, num_vars] # numerical variables only
+df_cat <- all[, cat_vars] # categorical variables only
+
+# One-hot encoding on categorical variables using model.matrix()
+# You will get a more sparse matrix
+df_dummies <- model.matrix(~.-1, df_cat) %>% as.data.frame()
+
+# What do we get?
+head(df_dummies)
+
+# how many dummy variables did we get from categorical variables?
+dim(df_dummies)
+```
+
+
+```{r}
+# combine numerical variables with one-hot-encoded dummy variables
+df_all <- cbind(df_num, df_dummies)
+
+# how many variables do we have now?
+```
+
+Some of these new dummy variables may have a very small variance, for example, perhaps only one case equals 1 and all the other cases are 0. This kind of variables may cause overfitting or other problems in our models. We'll use the function nearZeroVar() from the package caret to remove those variables. This function checks the frequency of the most common value against the second most frequent value and detect highly-unbalanced variables.  Sometimes it may remove too many variables, and you can choose to manually identify variables with small variances. 
+
+
+```{r}
+# Drop near-zero-variance perdictors
+nzv.data <- nearZeroVar(df_all, saveMetrics = TRUE)
+drop.cols <- rownames(nzv.data)[nzv.data$nzv == TRUE]
+df_all <- df_all[,!names(df_all) %in% drop.cols]
+
+# how many predictors left?
+```
+
+### 3.4 Dealing with skewness
+
+One more thing to notice is that our response variable, SalePrice, is highly skewed. We have seen this in the histogram. We can also check this with a qq plot or directly calculate skewness.
+
+
+```{r}
+## QQ plot
+qqnorm(train$SalePrice)
+qqline(train$SalePrice)
+```
+
+
+```{r}
+## Skewness: skewed to the right
+skewness(train$SalePrice)
+```
+
+To fix a skewed variable, we can log transform it. 
+
+
+```{r}
+# Log transform our target variable
+y_train <- log(train$SalePrice)
+```
+
+We may have more skewed variables in our predictors. You can check on this later and fix those as well to improve your model.
+
+## 4. Simple Feature Engineering
+
+**Feature engineering** is the process of using your knowledge of the data to create new features. It can increase the predictive power of machine learning models by creating features from raw data to capture hidden insights. 
+
+Feature engineering is one of the most important steps in machine learning competitions. Most kaggle competitions are won by smart feature engineering! 
+
+Here we only show you several simple examples. You can always come back to engineer your own features later to imporve your model. 
+
+
+```{r}
+## There are 4 bathroom variables: FullBath, HalfBath, BsmtFullBath, BsmtHalfBath
+## Natually, we can create one variable showing the total number of bathrooms in the house
+df_all$TotalBath <- all$FullBath + (all$HalfBath*0.5) + all$BsmtFullBath + (all$BsmtHalfBath*0.5) 
+
+## Let's check it's correlation with SalePrice to see if this makes sense
+cor(df_all[1:1460,]$TotalBath, train$SalePrice)
+```
+
+
+```{r}
+## Check in plot
+df_bath <- cbind(df_all[1:1460, ]$TotalBath, train$SalePrice) %>% as.data.frame()
+names(df_bath) <- c("TotalBath", "SalePrice")
+ggplot(data=df_bath, aes(x=as.factor(TotalBath), y=SalePrice)) +
+    geom_point() + 
+    geom_smooth(method = "lm", se=FALSE, aes(group=1)) 
+```
+
+
+```{r}
+## Exercise: 
+## Let's create another variable, TotalSqFeet, 
+## which is the combined value of GrLivArea (ground living area square feet) and TotalBsmtSF (Total square feet of basement area)
+
+```
+
+What other features/variables can we create? 
+
+## 5. Building Models
+
+Our target is to predict the sale price of a house given all the features we know. For this, we'll train our model using the training data, and apply the trained model to the test data to predict the sale price. 
+
+One common problem is overfitting: if we use all of the training data, it's possible that our model would fit the training dataset perfectly, but may not work so well when applying to a new dataset. 
+
+To better evaluate our model, one popular strategy is to split the training data into two parts: training and validation. This means that we'll use only part of the data to train our models, and then use the validation data to evaluate and pick the best model. 
+
+Another popular method is n-fold cross validation, in which we split our training dataset into n folds, and train the model n times, each time using one fold as a validation set and the rest n-1 folds as the traing set. Then we'll pick the model that minimize the average error. 
+
+There are many different ways to evaluate a model. In this competition, submissions are evaluated on **Root-Mean-Squared-Error (RMSE)** between the logarithm of the predicted value and the logarithm of the observed sales price. Taking logs means that errors in predicting expensive houses and cheap houses will affect the result equally.
+
+Today we'll look at two models: Lasso linear regression and XGBoost. First, let's split our full dataset into training and test dataset again. 
+
+
+```{r}
+## Split training and test datasets, remove the Id variable
+x_train <- df_all[1:1460,] %>% select(-Id)
+x_test <- df_all[1461:nrow(df_all),] %>% select(-Id)
+```
+
+### 5.1 Lasso Regression
+
+**Lasso (least absolute shrinkage and selection operator)** is a regression analysis method that performs both variable selection and regularization in order to enhance the prediction accuracy and interpretability of the statistical model it produces. Lasso is essentially a regularization method: it reduces overfitting by simplifying the regression equation, and one important way is to throw out less important variables. This can be done manually by examining p-values and coefficients after running the model, but that can take a lot of time. Lasso offers a quick way by automatically selecting significant variables and shrinking the coefficients of unimportant variables to zero. 
+
+We are not getting into details here; for a comparison of linear, ridge, lasso, and elastic net, please see [here](https://www.analyticsvidhya.com/blog/2017/06/a-comprehensive-guide-for-linear-ridge-and-lasso-regression/) and [here](https://www.datacamp.com/community/tutorials/tutorial-ridge-lasso-elastic-net).  The following code chunk shows how to implement lasso regression using the train() function from caret, and you can easily change it into ridge or elastic net models. 
+
+
+```{r}
+## This chunk trains a lasso regression model
+
+set.seed(42) # set a random seed for replication
+my_control <- trainControl(method = "cv", number = 5) # 5-fold cross validation
+
+## Lasso regression have one major parameter: lambda. 
+## Here we use grid searching to find the best lambda between 0.001 and 0.1
+## First we build a grid with expand.grid()
+lasso_grid <- expand.grid(alpha = 1, # For ridge, alpha= 0; for lasso, alpha=1; for elastic net, remove constrains on alpha
+                          lambda = seq(0.001, 0.1, by = 0.0005))
+
+## Train our model using each combination of parameter value in the grid
+## Here we use the train() function from caret
+lasso_model <- train(x = x_train, # variables we know
+                     y = y_train, # target variable
+                     method = 'glmnet', # method
+                     trControl = my_control, # cross-validation
+                     tuneGrid = lasso_grid) # grid search for best parameter
+```
+
+
+```{r}
+## Plot lambda vs RMSE
+plot(lasso_model)
+```
+
+
+```{r}
+## Best parameter
+lasso_model$bestTune
+
+## Best RMSE
+min(lasso_model$results$RMSE)
+```
+
+
+```{r}
+## Predict sale price using test data
+lasso_pred <- predict(lasso_model, x_test)
+lasso_pred_exp <- exp(lasso_pred) #need to reverse the log to the real values
+head(lasso_pred_exp)
+```
+
+### 5.2 XGBoost Model
+
+**XGBoost**, or **XGBoost**, stands for “Extreme Gradient Boosting”. It is an algorithm that has been very popular in applied machine learning and Kaggle competitions for structured or tabular data. XGBoost is an implementation of **gradient boosted decision trees** designed for speed and performance. You can understand it as a way to ensemble a huge amount of trees. For details you can check [here](https://xgboost.readthedocs.io/en/latest/tutorials/model.html). 
+
+Unlike ridge, lasso, or elastic net, XGBoost has a lot of hyperparameters. We can use the same way to search for a best combination with expand.grid(), but it will take a lot of time. Here we'll skip the grid search and set the hyperparameters. For detailed explanation of those hyperparameters, please check [here.](https://xgboost.readthedocs.io/en/latest/parameter.html) 
+
+
+```{r}
+## Transform datasets for XGB model
+dtrain <- xgb.DMatrix(as.matrix(x_train), label = y_train)
+dtest <- xgb.DMatrix(as.matrix(x_test))
+```
+
+
+```{r}
+## Set up a grid for major xgb parameters
+xgb_grid <- expand.grid(nrounds = c(1000, 2000, 3000, 4000, 5000),
+                        eta = c(0.1, 0.05, 0.01),
+                        max_depth = c(2, 3, 4, 5, 6),
+                        gamma = 0,
+                        colsample_bytree=1,
+                        min_child_weight=c(1, 2, 3, 4 ,5),
+                        subsample=1
+)
+
+## Grid search for hyperparameters: takes a long time. Comment out for now. 
+
+# xgb_tune <- train(x=dtrain, y=y_train, method='xgbTree', trControl= my_control, tuneGrid=xgb_grid) 
+# xgb_tune$bestTune
+
+```
+
+
+```{r}
+## Set hyperparameters: this is actually from the grid search
+xgb_params <- list(
+  booster = 'gbtree', # method
+  objective = 'reg:linear', # Our target is a continous variable, so linear
+  colsample_bytree = 1, # Range:(0,1].Subsample ratio of columns when constructing each tree. 
+  eta = 0.005, # Range: [0,1]. Step size shrinkage used in update to prevents overfitting. After each boosting step, we can directly get the weights of new features, and eta shrinks the feature weights to make the boosting process more conservative.
+  max_depth = 4, # Maximum depth of a tree. Increasing this value will make the model more complex and more likely to overfit. 0 indicates no limit.
+  min_child_weight = 3,# Minimum sum of instance weight (hessian) needed in a child. The larger min_child_weight is, the more conservative the algorithm will be.
+  alpha = 0.3, # L1 regularization term on weights. Increasing this value will make model more conservative.
+  lambda = 0.4, # L2 regularization term on weights. Increasing this value will make model more conservative.
+  gamma = 0.01, # Minimum loss reduction required to make a further partition on a leaf node of the tree. The larger gamma is, the more conservative the algorithm will be.
+  subsample = 0.6, # Subsample ratio of the training instances. Setting it to 0.5 means that XGBoost would randomly sample half of the training data prior to growing trees. and this will prevent overfitting.
+  seed = 42, # a random seed to ensure getting the same result
+  silent = TRUE) # Print running messages or not
+```
+
+
+```{r}
+## Use cross validation to find the best number of iteration
+## This may take some time; we'll comment it out after we found the magic number
+
+## xgbcv <- xgb.cv(params = xgb_params, data = dtrain, nrounds = 5000, nfold = 5, showsd = T, metrics = "rmse", 
+##             print_every_n = 100, early_stopping_rounds = 50, maximize = F)
+```
+
+
+```{r}
+#train the model using the best iteration found by cross validation
+xgb_model <- xgb.train(data = dtrain,
+                       params = xgb_params, 
+                       nrounds = 3036)
+```
+
+
+```{r}
+# Predict sale price with test data
+xgb_pred <- predict(xgb_model, dtest)
+xgb_pred_exp <- exp(xgb_pred) # transform back
+head(xgb_pred_exp) # check the first few predictions
+```
+
+After training the model, we can check the importance of each variable. There are several metrics to evaluate the importance:
+
+**Gain** is the improvement in accuracy brought by a feature to the branches it is on. The idea is that before adding a new split on a feature X to the branch there was some wrongly classified elements, after adding the split on this feature, there are two new branches, and each of these branch is more accurate (one branch saying if your observation is on this branch then it should be classified as 1, and the other branch saying the exact opposite).
+
+**Cover** measures the relative quantity of observations concerned by a feature.
+
+**Frequency** is a simpler way to measure the Gain. It just counts the number of times a feature is used in all generated trees. We usually do not use this one. 
+
+
+```{r}
+## Check the most important variables
+importance <- xgb.importance (feature_names = colnames(dtrain),model = xgb_model)
+head(importance, 20)
+```
+
+
+```{r}
+## Importance plot
+xgb.plot.importance(importance[1:20,])
+```
+
+## 6. Create Submission File
+
+The last step is to create our submission file! 
+
+
+```{r}
+# Creat submission file from the lasso regression model
+sub_lasso <- data.frame(Id = test$Id, SalePrice = lasso_pred_exp)
+head(sub_lasso)
+write.csv(sub_lasso, file = 'lasso_submission.csv', row.names = F)
+```
+
+
+```{r}
+# Exercise: create a submission file from the xgboost model with the file name "xgb_submission.csv"
+
+
+```
+
+
+```{r}
+# Another common practice is to take a (weighted) average of multiple predictions. It sometimes can help minimize errors. 
+# There are more advanced ways to stack multiple models, but we'll skip that for now.
+# Let's just take a simple average of these two predictions and see what happens
+sub_ave <- data.frame(Id = test$Id, SalePrice = 0.5*(lasso_pred_exp + xgb_pred_exp))
+head(sub_ave)
+write.csv(sub_ave, file = 'ave_submission.csv', row.names = F)
+```
+
+Let's hit the "commit" button on the top right conner, and we are ready to submit our prediction to the competition! 
