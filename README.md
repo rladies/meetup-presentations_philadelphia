@@ -1,3 +1,7 @@
+
+<img align-'left' src='./logo/RLadiesPhilly.png'>
+
+
 # R-Ladies Philly Materials
 Here you can find meetup presentations and other materials for R-Ladies Philly.
 
