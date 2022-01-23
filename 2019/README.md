@@ -7,7 +7,7 @@
 | January | 2019 New Year Meetup and R-Ladies Birthday Party | [Link](2019_01/16JAN2019_RLadies_Philly.pdf) | |
 | February | Kick-off for the Community Data Project | [GitHub](https://github.com/rladiesPHL/2019_datathon) | |
 | March | Finale of Community Data Project | [Link](http://rladiesphilly.org/post/feb-march-recap/) | |
-| April | Open Science & Bioinformatics | [Link](2019/2019_04) | |
+| April | Open Science & Bioinformatics | [Link](2019_04) | |
 | May | Diversity and Inclusion and Data | | |
 | June | Workshop on Data Visualization | [Link](2019_06/June2019.md) | |
 | July | Data Science Lightning Talks | [Link](2019_07) | |
