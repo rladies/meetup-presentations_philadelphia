@@ -5,7 +5,7 @@
 ## Events
 | Title | Material | YouTube |
 |-------|------|---------|
-| Getting Started with Unit Testing in R | [Link](2021/2021_11/2021_11_slides.pdf) | [Link](https://youtu.be/4bPekjzIYiU) |
+| Getting Started with Unit Testing in R | [Link](2021_11/2021_11_slides.pdf) | [Link](https://youtu.be/4bPekjzIYiU) |
 
 
  
