@@ -1,4 +1,4 @@
-# R-Ladies Philly January 2002 Meetup
+# R-Ladies Philly January 2020 Meetup
 
 **Resolutions 2020!**
 

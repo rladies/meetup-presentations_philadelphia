@@ -18,19 +18,7 @@ Please check out our [meetup page](https://www.meetup.com/rladies-philly/)
 
 
 
-## 2020
-* December - [Data Visualization Workshop](https://www.rladiesphilly.org/post/recap_data_viz/)
-* November - [Your First R Package in 1 Hour](https://www.rladiesphilly.org/post/nov2020-recap/)
-* October - [Flexdashboard debugging with shinyobjects](https://www.rladiesphilly.org/post/oct2020-recap/)
-* September - [Decision Trees & Random Forests](https://www.meetup.com/rladies-philly/events/268783162/)
-* August - [Hands-on Machine Learning Workshop](https://www.meetup.com/rladies-philly/events/268783114/)
-* July - [How to Test and Roll](https://www.meetup.com/rladies-philly/events/268783188/)
-* June - [Intro to R Workshop](https://www.meetup.com/rladies-philly/events/268783148/)
-* May - [A/B Testing in R - Virtual Event](https://www.meetup.com/rladies-philly/events/268783099/)
-* April - [Introduction to the Tidyverse](https://www.meetup.com/rladies-philly/events/268620327/)
-* March - [2020 Data Hack Conclusion](https://www.meetup.com/rladies-philly/events/267325018/)
-* February - [2020 Data Hack: Hackathon Kickoff](https://www.meetup.com/rladies-philly/events/268305037/)
-* January - [R-esolutions 2020!](https://www.meetup.com/rladies-philly/events/266230696/)
+
 
 ## 2019
 * December - [Machine Learning Workshop](https://www.meetup.com/rladies-philly/events/266229730/)
