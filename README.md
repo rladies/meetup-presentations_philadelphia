@@ -1,5 +1,5 @@
 
-<img align='left' src='./logo/RLadiesPhilly.png'>
+<img align='left' height="50%" src='./logo/RLadiesPhilly.png'>
 
 
 # R-Ladies Philly Materials
