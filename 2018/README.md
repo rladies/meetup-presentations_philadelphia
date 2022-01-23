@@ -2,8 +2,19 @@
 # RLadies Philly 2018 Meetups
 
 ## Events
-| Title | Material | YouTube |
-|-------|----------|---------|
+| Month | Title | Material | YouTube |
+|-------|-------|----------|---------|
+| February | Data Visualization with ggplot2 Book Club | [Link](2018_02) | |
+| March | Workflow Optimization with RStudio Book Club | [Link](2018_03) | |
+| April | Introduction to Text Mining with R | | | 
+| May | Git HappieR with GitHub | [Link](2018_05) | |
+| June | Data Cleaning in R, part 1 | [Link](2018_06) | |
+| July | Coffee and Code project night (no materials) | | |
+| August | Data Cleaning in R, part 2 | [Link](2018_08) | |
+| September | Learn to make a website with R and blogdown! | [Link](2018_09/meetup-summary.md) | |
+| October | Dashboards and Apps with Shiny | [Link](2018_10/2018_10_October.md) | |
+| November | Workshop on Spatial Data Basics | [Link](2018_11/Spatial_Data_Basics_Presentation) | |
+| December | Introduction to Machine Learning | [Link](2018_12) | |
 
 
 
@@ -11,16 +22,13 @@
 
 
 
-## 2018
-* December - [Introduction to Machine Learning](https://www.meetup.com/rladies-philly/events/256607630/)
-* November - [Workshop on Spatial Data Basics](https://www.meetup.com/rladies-philly/events/255264879/)
-* October - [Dashboards and Apps with Shiny](https://www.meetup.com/rladies-philly/events/254920445/)
-* September - [Learn to make a website with R and blogdown!](https://www.meetup.com/rladies-philly/events/253845972/)
-* August - [Data Cleaning in R, part 2](https://www.meetup.com/rladies-philly/events/252955017/)
-* July - Coffee and Code project night (no materials - just working on our projects together)
-* June - [Data Cleaning in R, part 1](https://www.meetup.com/rladies-philly/events/251378907/)
-* May - [Git HappieR with GitHub](https://www.meetup.com/rladies-philly/events/250279457/)
-* April - [Introduction to Text Mining with R](https://www.meetup.com/rladies-philly/events/249207164/)
-* March - [Workflow Optimization with RStudio Book Club](https://www.meetup.com/rladies-philly/events/248025694/)
-* February - [Data Visualization with ggplot2 Book Club](https://www.meetup.com/rladies-philly/events/246879184/)
+
+
+
+
+
+
+
+
+
 
