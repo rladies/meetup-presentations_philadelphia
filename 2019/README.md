@@ -2,24 +2,36 @@
 # RLadies Philly 2019 Meetups
 
 ## Events
-| Title | Material | YouTube |
-|-------|----------|---------|
+| Month | Title | Material | YouTube |
+|-------|-------|----------|---------|
+| January | 2019 New Year Meetup and R-Ladies Birthday Party | [Link](2019_01/16JAN2019_RLadies_Philly.pdf) | |
+| February | Kick-off for the Community Data Project | [GitHub](https://github.com/rladiesPHL/2019_datathon) | |
+| March | Finale of Community Data Project | [Link](http://rladiesphilly.org/post/feb-march-recap/) | |
+| April | Open Science & Bioinformatics | [Link](2019/2019_04) | |
+| May | Diversity and Inclusion and Data | | |
+| June | Workshop on Data Visualization | [Link](2019_06/June2019.md) | |
+| July | Data Science Lightning Talks | [Link](2019_07) | |
+| August | Coffee and Code project night (no materials) | | |
+| September | Reporting Research with R Markdown | [Link](2019_09/2019_09_September.md) | |
+| October | Network Analysis | [Link](2019_10) | |
+| November | Data Analytics in Public Health | [Link](2019_11) | |
+| December | Machine Learning Workshop | [Link](2019_12/2019_12_December.md) | |
 
 
 
 
 
 
-## 2019
-* December - [Machine Learning Workshop](https://www.meetup.com/rladies-philly/events/266229730/)
-* November - [Data Analytics in Public Health](https://www.meetup.com/rladies-philly/events/265559935/)
-* October - [Network Analysis](https://www.meetup.com/rladies-philly/events/264114247/)
-* September - [Reporting Research with R Markdown](https://www.meetup.com/rladies-philly/events/264114213/)
-* August - Coffee and Code project night (no materials - just working on our projects together)
-* July - [Data Science Lightning Talks](https://www.meetup.com/rladies-philly/events/262431583/)
-* June - [Workshop on Data Visualization](https://www.meetup.com/rladies-philly/events/261558888/)
-* May - [Diversity and Inclusion and Data](https://www.meetup.com/rladies-philly/events/261088594/)
-* April - [Open Science & Bioinformatics](https://www.meetup.com/rladies-philly/events/259821220/)
-* March - Finale of the [Community Data Project](http://rladiesphilly.org/post/feb-march-recap/)
-* February - Kick-off for the Community Data Project [GitHub Here](https://github.com/rladiesPHL/2019_datathon)
-* January - [2019 New Year Meetup and R-Ladies Birthday Party](https://www.meetup.com/rladies-philly/events/256754198/)
+
+
+
+
+
+
+
+
+
+
+
+
+
