@@ -12,7 +12,7 @@ Please check out our [meetup page](https://www.meetup.com/rladies-philly/)
 ## Latest Event
 | Year | Title | Material | YouTube |
 |------|-------|------|---------|
-| 2021 | Getting Started with Unit Testing in R | [Link](2021/2021_11/2021_11_slides.pdf)  | [Link](https://youtu.be/4bPekjzIYiU) |
+| 2022 | Iterating well with PURRR | [Link](2022_04/2022_04_slides.pdf) | NA |
 
 
 
