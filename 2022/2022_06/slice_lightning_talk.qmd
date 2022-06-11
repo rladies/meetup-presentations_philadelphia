@@ -1,0 +1,794 @@
+---
+title: "Do more with dplyr::slice()"
+author: "June Choe<br>@yjunechoe"
+execute:
+  echo: true
+format:
+  revealjs:
+    logo: "https://www.rladiesphilly.org/author/r-ladies-philly/avatar_hue4e99079bc6317a6be3355d116429734_93925_270x270_fill_q90_lanczos_center.jpg"
+    code-line-numbers: false
+    slide-number: true
+---
+
+```{r}
+#| include: false
+library(dplyr)
+library(ggplot2)
+library(forcats)
+```
+
+## {background-color="#6C4176"}
+
+<style>
+span.center {
+  font-size: 2em;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(calc(-50%), calc(-50%));
+}
+</style>
+
+[Basics of `dplyr::slice()`]{.center}
+
+## Basic usage: 1) row selection
+
+```{r}
+mtcars %>% 
+  slice(1:6) # like `head()`, selects rows [1,...,6]
+```
+
+. . .
+
+```{r}
+mtcars %>% 
+  slice( n() ) # selects last row [32]
+```
+
+. . .
+
+```{r}
+mtcars %>% 
+  slice( (n() - 2) : n() ) # selects rows [30,31,32]
+```
+
+## Basic usage: 2) row reordering
+
+```{r}
+mtcars %>% 
+  slice( c(1,3,5,2,4,6) )
+```
+
+. . .
+
+```{r}
+mtcars %>% 
+  slice(1, 3, 5, 2, 4, 6) # FYI: "spliced" version works the same!
+```
+
+## Basic usage: 3) misc. behavior
+
+```{r}
+mtcars %>% 
+  slice( -(3:n()) ) # same as `1:2` (all except third row to last row)
+```
+
+. . .
+
+```{r}
+mtcars %>% 
+  slice( c(1, 1) ) # the first row, twice
+```
+
+. . . 
+
+```{r}
+mtcars %>% 
+  slice( n() + 1 ) # the 33rd row (doesn't exist; doesn't error!)
+```
+
+```{r}
+mtcars %>% 
+  slice( c(1, n() + 1) ) # non-existent rows are just ignored
+```
+
+## {background-color="#6C4176"}
+
+[`dplyr::slice()`, with a twist!]{.center}
+
+## Hidden usage: row filtering
+
+We know how `filter()` works...
+
+<br>
+
+```{r}
+mtcars$mpg == 22.8 # logical vector, same length as data
+```
+
+<br>
+
+```{r}
+mtcars %>% 
+  filter(mpg == 22.8) # subsets rows whose value is TRUE
+```
+
+## Hidden usage: row filtering
+
+You can expect a similar behavior from `slice()`!
+
+<br>
+
+```{r}
+which( mtcars$mpg == 22.8 )
+```
+
+<br>
+
+. . .
+
+```{r}
+mtcars %>% 
+  slice( which( mpg == 22.8 ) ) # evaluates to `slice( c(3, 9) )`
+```
+
+## Two sides of the same coin!
+
+:::: {.columns}
+
+::: {.column width="48%"}
+
+Filter
+
+```{r}
+#| eval: false
+df %>% 
+  filter( ... )
+```
+
+<br>
+
+```{r}
+#| eval: false
+df %>% 
+  filter( A, B ) # `A & B`
+```
+
+<br>
+
+```{r}
+#| eval: false
+df %>% 
+  filter( A | B )
+```
+
+:::
+
+::: {.column width="4%"}
+
+:::
+
+::: {.column width="48%"}
+
+Slice
+
+```{r}
+#| eval: false
+df %>% 
+  slice( which( ... ) )
+```
+
+<br>
+
+```{r}
+#| eval: false
+df %>% 
+  slice( which( A & B ) )
+```
+
+<br>
+
+```{r}
+#| eval: false
+df %>% 
+  slice( which( A | B ) )
+```
+
+:::
+
+::::
+
+. . .
+
+<br>
+
+```{r}
+#| eval: false
+df %>% filter( row_number() %in% which( ... ) ) # round-about
+```
+
+## But why?
+
+Filtering with slice has two interesting properties:
+
+. . .
+
+1) Vectors of filtered elements (=> set operations)
+
+. . .
+
+2) Elements as indices (=> integer operations)
+
+. . .
+
+Opens up new workflows
+
+- **row-relational operations**
+
+- **row shuffling**
+
+## {background-color="#6C4176"}
+
+[Row-relational operations]{.center}
+
+## But why?
+
+If you have data that encodes information in _row order_ (e.g., time), you can compute **relationships between rows**
+
+```{r}
+#| echo: false
+flights_df <- nycflights13::flights %>% 
+  filter(month == 6, day == 8, between(dep_time, 600, 1200),  origin == "JFK") %>% 
+  select(dep_time, flight, carrier)
+```
+
+```{r}
+flights_df
+```
+
+
+## Row-relational operations (Q1)
+
+Which flights departed _right after_ American Airlines flights?
+
+. . .
+
+```{r}
+flights_df$carrier == "AA"
+```
+
+. . .
+
+```{r}
+which( flights_df$carrier == "AA" )
+```
+
+. . .
+
+```{r}
+which( flights_df$carrier == "AA" ) + 1
+```
+
+## Row-relational operations (Q1)
+
+Which flights departed _right after_ American Airlines flights?
+
+```{r}
+flights_df %>% 
+  slice(
+    # Next row after where `carrier == "AA"`
+  )
+```
+
+## Row-relational operations (Q1)
+
+Which flights departed _right after_ American Airlines flights?
+
+```{r}
+flights_df %>% 
+  slice(
+    # Next row after where `carrier == "AA"`
+    which( carrier == "AA" ) + 1
+  )
+```
+
+
+## Row-relational operations (Q2)
+
+Do (1), but also include the American Airlines flights:
+
+```{r}
+#| eval: false
+flights_df %>% 
+  slice(
+    # Previous solution to (1)
+    which( carrier == "AA" ) + 1
+  )
+```
+
+## Row-relational operations (Q2)
+
+Do (1), but also include the American Airlines flights:
+
+```{r}
+flights_df %>% 
+  slice(
+    # Also including AA flights
+    which( carrier == "AA" ),
+    which( carrier == "AA" ) + 1
+  )
+```
+
+## Row-relational operations (Q3)
+
+Do (2), but preserve original row order:
+
+```{r}
+flights_df %>% 
+  slice(
+    # Previous solution to (2)
+    which( carrier == "AA" ),
+    which( carrier == "AA" ) + 1
+  )
+```
+
+
+## Row-relational operations (Q3)
+
+Do (2), but preserve original row order:
+
+```{r}
+flights_df %>% 
+  slice(
+    # First, concatenate the indices
+    c( which( carrier == "AA" ),
+       which( carrier == "AA" ) + 1 )
+  )
+```
+
+## Row-relational operations (Q3)
+
+Do (2), but preserve original row order:
+
+```{r}
+flights_df %>% 
+  slice(
+    # Then, sort
+    sort( c( which( carrier == "AA" ),
+             which( carrier == "AA" ) + 1 ) )
+  )
+```
+
+## Row-relational operations (Q3)
+
+Do (2), but preserve original row order:
+
+```{r}
+flights_df %>% 
+  slice(
+    # Optionally, drop duplicates
+    unique( sort( c( which( carrier == "AA" ),
+                     which( carrier == "AA" ) + 1 ) ) )
+  )
+```
+
+
+## Row-relational operations (Q4)
+
+Do (3), but with less code!
+
+. . .
+
+**Trick**: hoist them into a matrix and collapse item-wise!
+
+. . .
+
+```{r}
+matrix(
+  c( which( flights_df$carrier == "AA" ),
+     which( flights_df$carrier == "AA" ) + 1 ),
+  nrow = 2, byrow = TRUE
+)
+```
+
+. . .
+
+This essentially "stacks" two vectors:
+
+```{r}
+#| echo: false
+m <- matrix(
+  c( which( flights_df$carrier == "AA" ),
+     which( flights_df$carrier == "AA" ) + 1 ),
+  nrow = 2, byrow = TRUE
+)
+rownames(m) <- c("AA", "AA+1")
+m
+```
+
+
+## Row-relational operations (Q4)
+
+Do (3), but with less code!
+
+**Trick**: hoist them into a matrix and collapse item-wise!
+
+```{r, out.height='200px'}
+#| code-line-numbers: "6"
+matrix(
+  c( which( flights_df$carrier == "AA" ),
+     which( flights_df$carrier == "AA" ) + 1 ),
+  nrow = 2, byrow = TRUE
+) %>% 
+  as.vector() # default column-wise collapsing
+```
+
+## Row-relational operations (Q4)
+
+Do (3), but with less code!
+
+**Trick**: _hoist_ them into a matrix and collapse item-wise!
+
+**Trick 2**: use `base::outer()`!
+
+```{r}
+outer(
+  X = c(0, 1),                                           # row
+  Y = which( flights_df$carrier == "AA" ),               # col
+  FUN = function(row, col) { row + col }                 # cell
+)
+```
+
+## Row-relational operations (Q4)
+
+Do (3), but with less code!
+
+**Trick**: hoist them into a matrix and _collapse_ item-wise!
+
+**Trick 2**: use `base::outer()`!
+
+```{r}
+#| code-line-numbers: "6"
+outer(
+  X = c(0, 1),                                           # row
+  Y = which( flights_df$carrier == "AA" ),               # col
+  FUN = function(row, col) { row + col }                 # cell
+) %>% 
+  as.vector()
+```
+
+## Row-relational operations (Q4)
+
+Do (3), but with less code!
+
+```{r}
+flights_df %>% 
+  slice(
+    # Previous solution to (3)
+    sort( c( which( carrier == "AA" ),
+             which( carrier == "AA" ) + 1 ) )
+  )
+```
+
+## Row-relational operations (Q4)
+
+Do (3), but with less code!
+
+```{r}
+flights_df %>% 
+  slice(
+    # With `outer()`
+    as.vector(outer( 0:1, which(carrier == "AA"), `+` ))
+  )
+```
+
+
+## Row-relational operations (case)
+
+Let's try a full row-relational workflow example
+
+```{r}
+#| echo: false
+gapminder_recent <- gapminder::gapminder %>% 
+  left_join(gapminder::country_codes, by = "country") %>% 
+  filter(year > 1990) %>% 
+  select(country, country_code = iso_alpha, year, gdpPercap)
+```
+
+```{r}
+gapminder_recent
+```
+
+## Row-relational operations (case)
+
+A bar plot of Germany's GDP growth is straightforward ...
+
+```{r}
+#| echo: false
+gapminder_recent %>% 
+  group_by(year) %>% 
+  arrange(year, gdpPercap, by_group = TRUE) %>% # `year`-sorting optional
+  slice( as.vector(outer(-1:1, which(country == "Germany"), `+`)) ) %>% 
+  mutate(grp = forcats::fct_inorder(c("lo", "is", "hi"))) %>% 
+  ungroup() %>% 
+  ggplot(aes(as.factor(year), gdpPercap, group = grp)) +
+  geom_col(aes(fill = grp == "is"), position = position_dodge()) +
+  geom_text(
+    aes(label = country_code, alpha = as.integer(grp == "is")), vjust = 1.3,
+    position = position_dodge(width = .9)
+  ) + scale_alpha_identity() +
+  scale_fill_manual(
+    values = c("NA", "steelblue"),
+    guide = guide_none()
+  ) +
+  theme_classic() +
+  labs(title = "Germany's GDP growth", x = "Year", y = "GDP per capita")
+```
+
+## Row-relational operations (case)
+
+... but how can we also plot its GDP-neighbors?
+
+```{r gapminder-plot}
+#| echo: false
+gapminder_recent %>% 
+  group_by(year) %>% 
+  arrange(year, gdpPercap, by_group = TRUE) %>% # `year`-sorting optional
+  slice( as.vector(outer(-1:1, which(country == "Germany"), `+`)) ) %>% 
+  mutate(grp = forcats::fct_inorder(c("lo", "is", "hi"))) %>% 
+  ungroup() %>% 
+  ggplot(aes(as.factor(year), gdpPercap, group = grp)) +
+  geom_col(aes(fill = grp == "is"), position = position_dodge()) +
+  geom_text(
+    aes(label = country_code), vjust = 1.3,
+    position = position_dodge(width = .9)
+  ) +
+  scale_fill_manual(
+    values = c("grey75", "steelblue"),
+    guide = guide_none()
+  ) +
+  theme_classic() +
+  labs(title = "Germany's GDP growth", x = "Year", y = "GDP per capita")
+```
+
+
+## Row-relational operations (case)
+
+```{r}
+#| code-line-numbers: "1"
+gapminder_recent
+```
+
+## Row-relational operations (case)
+
+```{r}
+#| code-line-numbers: "2-3"
+gapminder_recent %>% 
+  group_by(year) %>% 
+  arrange(year, gdpPercap, by_group = TRUE) # `year`-sorting optional
+```
+
+## Row-relational operations (case)
+
+```{r}
+#| code-line-numbers: "2-3"
+gapminder_recent %>% 
+  group_by(year) %>% 
+  arrange(gdpPercap, by_group = TRUE) # same within-`year` ordering
+```
+
+## Row-relational operations (case)
+
+```{r}
+#| code-line-numbers: "4"
+gapminder_recent %>% 
+  group_by(year) %>% 
+  arrange(year, gdpPercap, by_group = TRUE) %>% # `year`-sorting optional
+  slice( as.vector(outer( -1:1, which(country == "Germany"), `+` )) )
+```
+
+## Row-relational operations (case)
+
+```{r}
+#| code-line-numbers: "5-6"
+gapminder_recent %>% 
+  group_by(year) %>% 
+  arrange(year, gdpPercap, by_group = TRUE) %>% # `year`-sorting optional
+  slice( as.vector(outer(-1:1, which(country == "Germany"), `+`)) ) %>% 
+  mutate(grp = forcats::fct_inorder(c("lo", "is", "hi"))) %>% 
+  ungroup()
+```
+
+## Row-relational operations (case)
+
+```{r}
+#| code-line-numbers: "7-8"
+gapminder_recent %>% 
+  group_by(year) %>% 
+  arrange(year, gdpPercap, by_group = TRUE) %>% # `year`-sorting optional
+  slice( as.vector(outer(-1:1, which(country == "Germany"), `+`)) ) %>% 
+  mutate(grp = forcats::fct_inorder(c("lo", "is", "hi"))) %>% 
+  ungroup() %>% 
+  ggplot(aes(as.factor(year), gdpPercap, group = grp)) +
+  geom_col(aes(fill = grp == "is"), position = position_dodge())
+```
+
+## Row-relational operations (case)
+
+```{r}
+#| eval: false
+#| code-line-numbers: "9-18"
+<<gapminder-plot>>
+```
+
+## Row-relational operations (case)
+
+```{r}
+#| echo: false
+<<gapminder-plot>>
+```
+
+## {background-color="#6C4176"}
+
+[Row-relational operations]{.center}
+
+## Row shuffling - the problem
+
+Input:
+
+```{r}
+fruits <- c("🍎", "🍋", "🍇")[c(2,1,3,3,2,3,1,2,2,1,2,2,3,3,3)]
+table(fruits)
+cat(fruits)
+```
+
+. . .
+
+Output:
+
+```{r}
+fruits_out <- c("🍎", "🍋", "🍇")[c(3,2,1,3,2,3,2,1,3,2,3,2,1,3,2)]
+cat(fruits_out)
+```
+
+## Row shuffling - interweaving vectors
+
+```{r}
+#| eval: false
+grapes <- which(fruits == "🍇")
+grapes
+```
+
+```{r}
+#| echo: false
+grapes <- which(fruits == "🍇")
+setNames(grapes, rep("🍇", 6))
+```
+
+. . .
+
+```{r}
+#| eval: false
+lemons <- which(fruits == "🍋")
+lemons
+```
+
+```{r}
+#| echo: false
+lemons <- which(fruits == "🍋")
+setNames(lemons, rep("🍋", 6))
+```
+
+. . .
+
+```{r}
+#| eval: false
+apples <- which(fruits == "🍎")
+apples
+```
+
+```{r}
+#| echo: false
+apples <- which(fruits == "🍎")
+setNames(apples, rep("🍎", 3))
+```
+
+. . .
+
+```{r}
+#| eval: false
+apples <- c(apples[1], 0, apples[2], 0, apples[3], 0)
+apples
+```
+
+```{r}
+#| echo: false
+apples <- c(apples[1], 0, apples[2], 0, apples[3], 0)
+setNames(apples, c("🍎", "", "🍎", "", "🍎", ""))
+```
+
+## Row shuffling - `matrix()`, again!
+
+```{r}
+fruits_matrix <- matrix(c(grapes, lemons, apples), nrow = 3, byrow = TRUE)
+fruits_matrix
+```
+
+. . .
+
+```{r}
+#| echo: false
+rownames(fruits_matrix) <- names(table(fruits))
+fruits_matrix
+```
+
+. . .
+
+```{r}
+#| echo: false
+matrix(c("", fruits)[t(fruits_matrix+1)], nrow = 3, byrow = TRUE)
+```
+
+
+## Row shuffling - `matrix()`, again!
+
+```{r}
+#| echo: false
+fruits_matrix <- matrix(c(grapes, lemons, apples), nrow = 3, byrow = TRUE)
+```
+
+```{r}
+fruits_matrix
+```
+
+. . .
+
+```{r}
+as.vector(fruits_matrix)
+```
+
+<br>
+
+. . .
+
+```{r}
+cat( fruits[as.vector(fruits_matrix)] )
+cat( fruits_out )
+```
+
+## Row shuffling - same thing for rows
+
+```{r}
+#| echo: false
+set.seed(1234)
+fruits_df <- tibble(
+  id = seq_along(fruits),
+  fruit = c("🍎" = "Apple", "🍋" = "Lemon", "🍇" = "Grape")[fruits],
+  quality = runif(15, min = .6, max = 1),
+  price = c("Apple" = 1, "Lemon" = .5, "Grape" = 2)[fruit] * quality
+)
+```
+
+```{r}
+fruits_df
+```
+
+## Row shuffling - same thing for rows
+
+```{r}
+fruits_df %>% 
+  slice( as.vector(fruits_matrix) )
+```
+
+## Row shuffling - same thing for rows
+
+```{r}
+fruits_df %>% 
+  slice( penngradlings::rshuffle(fruit, mode = "squish") )
+```
+
+<span class="footnote">[Code for `rshuffle()`](https://github.com/yjunechoe/penngradlings/blob/master/R/data-wrangling-misc.R)</span>
+
+## {background-color="#6C4176"}
+
+[Thank you!]{.center}
