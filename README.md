@@ -5,20 +5,10 @@
 # R-Ladies Philly Materials
 Here you can find meetup presentations, code, YouTube links and other materials for R-Ladies Philly.
 
+
 ## Upcoming events
+
 Please check out our [meetup page](https://www.meetup.com/rladies-philly/)
-
-
-## Latest Event
-| Year | Title | Material | YouTube |
-|------|-------|------|---------|
-| 2022 | Lightning Talks | | coming soon |
-| 2022 | Iterating well with PURRR | [Link](2022_04/2022_04_slides.pdf) | NA |
-
-
-
-
-
 
 
 ## Further information
