@@ -1,0 +1,256 @@
+---
+title: "Tidy Tuesday Meetup"
+subtitle: "2023 week ?: London Marathon"
+author: "Alice Walsh for R-Ladies Philly"
+date: "2023-04-25"
+output: 
+  html_document:
+    theme: lumen
+    toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_packages, echo=FALSE}
+# This code chunk won't be displayed in final product because set echo=FALSE
+library(dplyr) # for data manipulation
+library(ggplot2) # for plots
+library(corrplot) # for correlation plot
+
+theme_set(theme_light())
+```
+
+# Overview
+
+Let's look at some fun data as part of a tidy tuesday event. This week, the 
+data is from the London Marathon.
+
+https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-04-25
+
+https://nrennie.rbind.io/blog/web-scraping-rvest-london-marathon/
+
+# Load the data
+
+```{r}
+winners <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-04-25/winners.csv') %>% 
+        janitor::clean_names()
+london_marathon <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-04-25/london_marathon.csv') %>% 
+        janitor::clean_names()
+
+glimpse(winners)
+glimpse(london_marathon)
+```
+
+# Ideas
+
++ Patterns over time?
++ Do some simple tidymodels? (winners is only 163 rows, and no losers)
+        + Could we predict the winning time based on the weather?
++ Add in other data to look at the weather in london?
+  + https://www.weather.gov/documentation/services-web-api
+  + https://www.kaggle.com/datasets/emmanuelfwerr/london-weather-data
++ look for outliers? really high or low values?
++ Look at other marathon data with rvest (other cities)
+
+# Analysis
+
+We added a dataset with the london weather that was sourced from a kaggle dataset:
+
+https://www.kaggle.com/datasets/emmanuelfwerr/london-weather-data?resource=download
+
+```{r}
+weather <- readr::read_csv(
+        "https://raw.githubusercontent.com/rjake/one-off-projects/main/R/tidy-tuesday/2023-04-25-London-Marathon/weather.csv")
+head(weather)
+
+# Merge with weather
+marathon_weather <- inner_join(london_marathon, weather, by = "date")
+winner_weather <- inner_join(london_marathon %>% select(date, year), 
+                             weather, 
+                             by = "date") %>% 
+        left_join(winners, by = "year")
+
+# merging it all!
+prep_df <- 
+        winners %>%
+        distinct(year, category, time) %>%
+        mutate(time = as.numeric(time)) %>% 
+        tidyr::pivot_wider(
+                names_from = category, 
+                values_from = time
+        ) %>%
+        inner_join(weather %>% 
+                           mutate(year = lubridate::year(date)),
+                   by = "year") %>%
+        inner_join(london_marathon) %>%
+        mutate(month = lubridate::month(date)) %>% 
+        janitor::clean_names() %>% 
+        print()
+```
+
+## Overall correlation of the variables
+
+Wow! A lot of these are highly correlated!
+
++ year has a large effect - times are getting better (lower) over time
++ year is also highly associated with all the participant stats
++ the weather variables are correlated with each other
++ we dont see a large correlation between the weather variables and the participant stats or the winning times
+
+We did not have time to try {ggpairs}
+
+```{r}
+all_correlations <- cor(
+        prep_df %>% 
+                select(-raised, -snow_depth) %>% 
+                select(where(is.numeric)) %>% 
+                tidyr::drop_na(),
+        method = "spearman")
+corrplot(all_correlations)
+```
+
+## Impact of weather on the number of finishers?
+```{r}
+marathon_weather %>% 
+        ggplot(aes(x = precipitation, y = finishers)) + 
+        geom_point(colour = "#88398A") + 
+        scale_x_log10() + 
+        theme_light()
+
+marathon_weather %>% 
+        ggplot(aes(x = max_temp, y = finishers)) + 
+        geom_point(colour = "#88398A") + 
+        scale_x_log10() + 
+        theme_light()
+```
+
+
+## Plots of winners data
+
+Let's explore the trends in the winner's times
+
+```{r}
+# facet grid of winners by Category over Year
+ggplot(winner_weather, aes(precipitation, time)) + 
+  geom_point(colour = "#88398A") + 
+  facet_grid(cols = vars(category)) + 
+  theme_bw()
+
+ggplot(winner_weather, aes(max_temp, time)) + 
+  geom_point(colour = "#88398A") + 
+  facet_grid(cols = vars(category)) + 
+  theme_bw()
+```
+
+Now we had the idea to look at models including the year and weather.
+
+```{r}
+# more rain = fewer finishers
+lm(finishers ~ precipitation, data = prep_df) %>% 
+        broom::tidy()
+lm(finishers ~ precipitation + year, data = prep_df) %>% 
+        broom::tidy()
+
+lm(finishers ~ precipitation > 0, data = prep_df) %>% 
+        broom::tidy()
+lm(finishers ~ (precipitation > 0) + year, data = prep_df) %>% 
+        broom::tidy()
+
+# higher temp = more finishers, but decreased effect when including year!
+lm(finishers ~ max_temp, data = prep_df) %>% 
+        broom::tidy()
+lm(finishers ~ max_temp + year, data = prep_df) %>% 
+        broom::tidy()
+```
+
+We also looked at the wheelchair_men times.
+
+If we look back at the plot of precipitation versus the time, we see that there is 
+one year with really high precipitation and also really high winning times. 
+That appears to be an early year (1983) and the wheelchair times are slower in those
+early years.
+
+```{r}
+# higher temp = faster time
+lm(wheelchair_men ~ max_temp, data = prep_df) %>% 
+        broom::tidy()
+lm(wheelchair_men ~ max_temp + year, data = prep_df) %>% 
+        broom::tidy()
+
+# more rain = slower time?
+lm(wheelchair_men ~ precipitation > 0, data = prep_df) %>% 
+        broom::tidy()
+lm(wheelchair_men ~ (precipitation > 0) + year, data = prep_df) %>% 
+        broom::tidy()
+lm(men ~ precipitation > 0, data = prep_df) %>% 
+        broom::tidy()
+lm(men ~ (precipitation > 0) + year, data = prep_df) %>% 
+        broom::tidy()
+```
+
+```{r}
+weather %>%
+        ggplot(aes(x = date, y = max_temp)) + 
+        geom_point() + 
+        labs(title = "temperatures rose over time")
+```
+
+## Time differences by sex categories over time
+
+```{r}
+prep_df %>%
+  mutate(
+    diff_sex = women - men,
+    diff_sex_wc = wheelchair_women - wheelchair_men
+  ) %>%
+  ggplot(aes(year, diff_sex)) +
+        geom_smooth(method = "lm", se = FALSE) + 
+  geom_point(aes(color = max_temp))
+```
+
+## Exploration of the winners data
+```{r}
+# trend of winners by Category over Year
+ggplot(winners, aes(x=year)) + 
+  geom_line(aes(y=time, col=category)) + 
+  theme_bw()
+
+# facet grid of winners by Category over Year
+ggplot(winners, aes(year, time)) + 
+  geom_point(colour = "#88398A") + 
+  facet_grid(cols = vars(category)) + 
+  theme_bw()
+
+# facet grid of winners by Category and Gender over Year
+winners %>% 
+  mutate(Gender = gsub('Wheelchair ','',Category),
+         Wheelchair = ifelse(nchar(Category) > 6,1,0)) %>% 
+  ggplot(aes(Year, Time)) + 
+  geom_point(colour = "#88398A") + 
+  facet_grid(cols = vars(Gender), rows = vars(Wheelchair), scales = "free_y") + 
+  theme_bw()
+```
+
+
+## Dealing with the y-axis?
+
+We noticed that the winning times were formated weird sometimes. 
+Here, they are converted to hours!
+
+```{r}
+winners %>%
+  rename_all(tolower) %>%
+  ggplot(aes(x = year, y = time)) +
+  geom_line(aes(group = category)) +
+  facet_wrap(~category) +
+  scale_y_time(
+    labels = ~paste0(lubridate::hour(.x), "H")
+  )
+```
+
+# Contact information
+For any questions, contact <philly@rladies.org>
